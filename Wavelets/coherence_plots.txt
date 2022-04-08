@@ -1,0 +1,56 @@
+# Below used to generate wavelet coherence plots in r studio
+library(biwavelet)
+library(lubridate)
+library(repr)
+
+#Load merged data at 5 min sample rate
+Data <- read.csv("C:\\Users\\conal\\Desktop\\MCM\\Practicum\\data\\ETH,gas,usage merged_5min 11-26 to 01-26.csv")
+
+
+# Columns to series
+datetime = as.POSIXct(Data$datetime, format="%Y-%m-%d %H:%M:%S")
+gas_limit  = Data$gas_limit
+gas_used  = Data$gas_used
+Open  = Data$Open
+avg_gas_price  = Data$avg_gas_price
+max_gas_price  = Data$max_gas_price
+min_gas_price  = Data$min_gas_price
+block_utilisation  = Data$block_utilisation
+
+#To time series with datetime
+gas_limit_ts = cbind(datetime, gas_limit)
+gas_used_ts = cbind(datetime, gas_used)
+Open_ts = cbind(datetime, Open)
+min_gas_price_ts = cbind(datetime, min_gas_price)
+avg_gas_price_ts = cbind(datetime, avg_gas_price)
+max_gas_price_ts = cbind(datetime, max_gas_price)
+block_utilisation_ts = cbind(datetime, block_utilisation)
+
+#Select series for coherence
+t1 = min_gas_price_ts
+t2 = Open_ts
+nrands = 50
+
+# Use biwavelet library to generate coherence matrix
+wtc.t1t2 = wtc(t1, t2, nrands = nrands, s0 = 3600, max.scale = 1209600, mother = 'dog')
+wtc.t1t2$period <- wtc.t1t2$period/60
+
+
+
+# Plotting a graph
+dev.new(width=12,height=6,noRStudioGD = TRUE)
+par(oma = c(0, 0, 0, 1), mar = c(5, 4, 5, 10) + 0.1)
+plot(wtc.t1t2, plot.phase = TRUE, lty.coi = 1, col.coi = "grey", lwd.coi = 2, 
+    lwd.sig = 2, arrow.lwd = 0.03, arrow.len = 0.12, ylab = "Scale", xlab = "Period", 
+    plot.cb = TRUE, main = "Wavelet Coherence: min_gas_price_ts vs Open_ts(dog)")
+
+
+# Adding grid lines
+
+verticle_lines <- as.numeric(seq(as.POSIXct("2021/11/26"), as.POSIXct("2022/1/26"), "weeks"))
+abline(v = verticle_lines, h = 1:16, col = "brown", lty = 1, lwd = 1)
+
+# Defining x labels
+
+
+axis.POSIXct(3, at=seq(datetime[1], tail(datetime,1), by='24 hours'), format = "%m-%d")
